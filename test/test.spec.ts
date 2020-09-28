@@ -27,7 +27,7 @@ let bl: BusinessLayer = new BusinessLayer(db, ea, wss, new jsonschema.Validator(
 let server: Initializer = null;
 let sEId: string = '';
 
-describe('Successful server test', function () {
+describe('Successful run test', function () {
 
         it('Successful server initialization', function (done) {
             this.timeout(10000);
@@ -84,7 +84,7 @@ describe('Successful server test', function () {
         });
 });
 
-describe('Unsuccessful server test', function () {
+describe('Error handling tests', function () {
     this.timeout(6000);
     it('Event date inferior to now', function (done) {
         client.registerMessageListener((message) => {

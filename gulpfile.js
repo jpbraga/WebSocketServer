@@ -7,8 +7,7 @@ const Tasks = require("./gulptasks/tasks");
 
   gulp.task('start',
     gulp.series(
-      //_task.runteste,
-      _task.cleann,
+      _task.clean,
       _task.compile,
       _task.static
     ));

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "build": "gulp start",
-    "test": "mocha -b -r ts-node/register test/**/*.spec.ts",
+    "test": "mocha -b --exit -r ts-node/register test/**/*.spec.ts",
     "debug": "node --nolazy --inspect-brk=9229 ts-node index.js"
   },
   "repository": {
