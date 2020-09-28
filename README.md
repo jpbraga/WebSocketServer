@@ -17,6 +17,7 @@ $ npm i
 $ npm start
 
 **IMPORTANT**: In the file .env at the root directory the LOG_LEVEL should be at "info" *level* in order to display startup log info.
+
 *levels: trace, debug, info, warn, error and fatal levels (plus all and off)*
 
 
