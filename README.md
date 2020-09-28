@@ -1,4 +1,4 @@
-# Simple NodeJS WebSocket Server in Typescript.
+# Simple NodeJS WebSocket Server in Typescript
 
 This project is developed in NodeJS using Typescript, ts-node component to run directly as typescript file, gulp tasks to build the dist version, mocha tests and it's docker ready.
 
