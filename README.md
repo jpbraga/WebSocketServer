@@ -2,7 +2,7 @@
 
 This project is developed in NodeJS using Typescript, ts-node component to run it directly from typescript, gulp tasks to build the dist version, mocha tests, mongoDB, and it's docker ready.
 
-# Functional description
+# Description
 This server establishes connections with its clients using websockets. Once the connection is established, a client can send an event request to be scheduled by the server. When an event time is reached, the server sends out a broadcast for all connected clients containing the event definition.
 
 In a case of shutdown, pending events are restored from the database once the service is restarted.
