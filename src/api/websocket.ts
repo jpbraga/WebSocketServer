@@ -50,8 +50,8 @@ export class WSServer {
 
             connection.on('message', async (message) => {
                 if (message.type === 'utf8') {
-                    this.log.debug(entity, `Received Message: ${message.utf8Data}`);
-                    this.notifyMessageListeners(connection, message.utf8Data);
+                    this.log.debug(entity, `Received Message: ${message?.utf8Data}`);
+                    this.notifyMessageListeners(connection, message?.utf8Data);
                     //this.sendMessage(connection, await this.executeCommand(message));
                 }
             });

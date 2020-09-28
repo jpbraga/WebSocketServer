@@ -161,4 +161,12 @@ describe('Error handling tests', function () {
             createdBy: 'Joao Braga'
         }));
     });
+    it('Invalid JSON - Simple string instead of a JSON', function (done) {
+        client.registerMessageListener((message) => {
+            let jMsg = JSON.parse(message);
+            if(jMsg.code === REQUEST_RESPONSES.ERROR) done();
+            else done(`Event was not registered due to an error: ${jMsg.message}`);
+        });
+        client.sendMessage('Created by Joao Braga');
+    });
 });
