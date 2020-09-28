@@ -11,7 +11,7 @@ In a case of shutdown, pending events are restored from the database once the se
 
 There are two ways of running this server:
 
-# 1) Run directly as typescript
+# 1) Run as typescript (intended for dev)
 $ npm i
 
 $ npm start
@@ -21,7 +21,7 @@ $ npm start
 *levels: trace, debug, info, warn, error and fatal levels (plus all and off)*
 
 
-# 2) Run in a Docker
+# 2) Run in a container
 For this you will need the Docker engine (https://www.docker.com/) up and running.
 Once its ready do as following:
 
@@ -41,13 +41,15 @@ $ docker ps
 
 $ docker logs <container-id>
   
-
+# Database
 The database it uses is a remote MongoDB Cluster (https://cloud.mongodb.com/). The database address, user and password are configured in the .env file.
 *For all intents and purposes MongoDB user has no administrative privileges and will expire in a week*
 
-# Mocha testing
-This project has automated test scenarios developed in mocha.
+# Automated tests
+This project has automated test scenarios developed in **mocha** (https://mochajs.org/).
+
 To run the automated tests do as following:
+
 
 $ npm i *(if not already)*
 
