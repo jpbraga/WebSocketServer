@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "es2015",
+      "dom"
+    ],
+    "outDir": "dist/RML",
+    "declaration": false,
+    "experimentalDecorators": true,
+    "removeComments": true,
+    "sourceMap": false,
+    "noImplicitAny": false,
+    "target": "es2015",
+    "module": "commonjs",
+    "resolveJsonModule": true,
+    "esModuleInterop": true
+  },
+  "compileOnSave": false,
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.sql",
+    "./package.json"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
