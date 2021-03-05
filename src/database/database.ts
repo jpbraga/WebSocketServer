@@ -1,64 +1,138 @@
-import MongoClient = require('mongodb');
+import redis = require('redis');
+import { ENV_VARS } from '../util/consts/env.vars';
+import { Environment } from '../util/environment';
 import { LogService } from '../util/log.services';
 const entity: string = "Database";
 
 export class Database {
-    private db: MongoClient.MongoClient = null;
-    private dbo: MongoClient.Db = null;
+    private client = null;
     private log: LogService;
+    private host: string;
+    private port: number; //6379
+    private password: string;
 
     constructor() {
         this.log = LogService.getInstnce();
+        this.host = Environment.getValue(ENV_VARS.REDIS_HOST, "localhost");
+        this.port = parseInt(Environment.getValue(ENV_VARS.REDIS_PORT, "6379"));
+        this.password = Environment.getValue(ENV_VARS.REDIS_PASSWORD)
     }
 
     public async init() {
-        try {
-            this.log.info(entity, `Connecting to the remote database as ${process.env.DB_URL}...`)
-            this.db = await MongoClient.connect(process.env.DB_URL,
-                {
-                    useUnifiedTopology: true,
-                    auth: {
-                        user: process.env.DB_USER,
-                        password: process.env.DB_PASSWORD
-                    }
+        return new Promise((resolve, reject) => {
+            try {
+                if (!this.port || !this.host) throw new Error("Host and/or port for redis must be informed");
+                this.log.info(entity, `Connecting to the redis cluster/instance at ${this.host}:${this.port}...`)
+                this.client = redis.createClient({ 
+                    port: this.port, 
+                    host: this.host, 
+                    password: this.password 
                 });
-            this.log.info(entity, `Connected to the remote database as ${process.env.DB_USER}`);
-            this.log.info(entity, `Opening database ${process.env.DB_NAME}`);
-            this.dbo = this.db.db(process.env.DB_NAME);
-            this.log.info(entity, `${process.env.DB_NAME} opened!`);
-            this.log.info(entity, "Database ready");
-        } catch (er) {
-            this.log.fatal(entity, er);
-            throw er;
-        }
+
+                this.client.on('connect', () => {
+                    this.log.info(entity, `Connected to redis!`);
+                    resolve(true);
+                });
+
+            } catch (er) {
+                this.log.fatal(entity, er);
+                reject(er);
+            }
+        })
     }
 
-    public async insert(document: any | any[]) {
-        if (!this.isInitialized()) throw new Error('The database was not initialized.');
-        try {
-            let insertedRecord = null;
-            if (Array.isArray(document)) await this.dbo.collection(process.env.DB_COLLECTION).insertMany(document);
-            else insertedRecord = await this.dbo.collection(process.env.DB_COLLECTION).insertOne(document);
-            this.log.info(entity, 'Record(s) inserted.');
-            return insertedRecord;
-        } catch (er) {
-            this.log.error(entity, er);
-            throw er;
-        }
+    public async insert(key: string, value: any) {
+        return new Promise((resolve, reject) => {
+            if (!this.isInitialized()) throw new Error('The redis client was not initialized.');
+            try {
+                this.client.set(key, value, (err, reply) => {
+                    if (err) throw err;
+                    resolve(reply);
+                });
+            } catch (er) {
+                this.log.error(entity, er);
+                reject(er);
+            }
+        })
     }
 
-    public async find(query: MongoClient.FilterQuery<any> = {}) {
-        if (!this.isInitialized()) throw new Error('The database was not initialized.');
-        try {
-            return this.dbo.collection(process.env.DB_COLLECTION).find(query).toArray();
-        } catch (er) {
-            this.log.error(entity, er);
-            throw er;
-        }
+    public async delete(key: string) {
+        return new Promise((resolve, reject) => {
+            if (!this.isInitialized()) throw new Error('The redis client was not initialized.');
+            try {
+                this.client.del(key, (err, reply) => {
+                    if (err) throw err;
+                    resolve(reply);
+                });
+            } catch (er) {
+                this.log.error(entity, er);
+                reject(er);
+            }
+        })
+    }
+
+    public async find(key: string) {
+        return new Promise((resolve, reject) => {
+            if (!this.isInitialized()) throw new Error('The redis client was not initialized.');
+            try {
+                this.client.get(key, (err, object) => {
+                    if (err) throw err;
+                    resolve(object);
+                });
+            } catch (er) {
+                this.log.error(entity, er);
+                reject(er);
+            }
+        })
+    }
+
+    public async set(key: string, value: any) {
+        return new Promise((resolve, reject) => {
+            if (!this.isInitialized()) throw new Error('The redis client was not initialized.');
+            try {
+                this.client.sadd([key, value], (err, objects) => {
+                    if (err) throw err;
+                    resolve(objects);
+                });
+            } catch (er) {
+                this.log.error(entity, er);
+                reject(er);
+            }
+        })
+    }
+
+    public async getSet(key: string) {
+        return new Promise((resolve, reject) => {
+            if (!this.isInitialized()) throw new Error('The redis client was not initialized.');
+            try {
+                this.client.smembers(key, (err, objects) => {
+                    if (err) throw err;
+                    resolve(objects);
+                });
+            } catch (er) {
+                this.log.error(entity, er);
+                reject(er);
+            }
+        })
+    }
+
+    public async removeSet(key: string, value: any) {
+        return new Promise((resolve, reject) => {
+            if (!this.isInitialized()) throw new Error('The redis client was not initialized.');
+            try {
+                this.client.srem(key, value, (err, objects) => {
+                    if (err) throw err;
+                    resolve(objects);
+                });
+            } catch (er) {
+                this.log.error(entity, er);
+                reject(er);
+            }
+        })
     }
 
     private isInitialized(): boolean {
-        return (this.db && this.dbo) ? true : false;
+        return (this.client) ? true : false;
     }
 }
 

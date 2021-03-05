@@ -1,92 +1,101 @@
 import { WSServer } from "../api/websocket";
 import { Database } from "../database/database";
-import { EventAlarm } from "../services/event.alarm";
+import { EventNotification } from "../services/event.notification";
 import { LogService } from "../util/log.services";
-import jsonschema = require('jsonschema');
-import { EventResponseInterface } from "../interfaces/event.response";
-import { EventResponseRegisterErrorInterface } from "../interfaces/event.register.error.response";
-import { EventResponseRegisterInterface } from "../interfaces/event.register.response";
-import { REQUEST_RESPONSES } from "../api/response.consts";
 import { MessageEventNotification } from "../interfaces/event.message.notification";
-import { EventInterface } from "../interfaces/event";
+import { RESTApi } from "../api/rest";
+import { WEBSOCKET_EVENT_TYPES } from "../api/consts/websocket.event.types";
+import { REST_EVENT_TYPES } from "../api/consts/rest.event.types";
+import { MessageInterface } from "../interfaces/message";
+import { Environment } from "../util/environment";
+import { ENV_VARS } from "../util/consts/env.vars";
 
-const entity:string = "BusinessLayer";
+const entity: string = "BusinessLayer";
+const REDIS_SERVERS_LIST = "SERVERS";
 
 export class BusinessLayer {
 
-    private log:LogService;
-    constructor(private db:Database,
-                private ea:EventAlarm,
-                private ws:WSServer,
-                private validator: jsonschema.Validator) {
+    private log: LogService;
+    constructor(private db: Database,
+        private en: EventNotification,
+        private ws: WSServer,
+        private rest: RESTApi,
+        private serverId: string) {
         this.log = LogService.getInstnce();
+        this.log.info(entity, `Server reference id is ${this.serverId}`);
     }
 
-    public init () {
-        this.ws.registerMessageListener(async (event:MessageEventNotification) => {
-            this.ws.sendMessage(event.sender, await this.executeCommand(event.content));
+    public async init() {
+        this.ws.registerEventListener(async (event: MessageEventNotification) => {
+            this.processWSEvents(event.type, event.content, event.sender);
         });
-        this.log.debug(entity,'WebSocket Message Listener registered!');
+        this.log.debug(entity, 'WebSocket events listener registered!');
 
-        this.ea.registerAlarmListener((event:EventInterface) => {
-            this.ws.sendBroadcast({
-                code: REQUEST_RESPONSES.EVENT,
-                message: `The event ${event.event} (${event._id}) just went off.`,
-                event: event
-            })
+        this.rest.registerEventListener(async (event: MessageEventNotification) => {
+            this.processRESTApiEvents(event.type, event.content, event.sender);
         });
-        this.log.debug(entity,'Event Alarm Listener registered!');
+        this.log.debug(entity, 'RESTApi event listener registered!');
 
-        this.log.info(entity,'Business layer ready!');
+        await this.db.set(REDIS_SERVERS_LIST, JSON.stringify({
+            serverId: this.serverId,
+            address: this.rest.getRESTApiAddress()
+        }));
+        this.log.debug(entity, `Server ${this.serverId} registered in Redis`);
+
+        this.log.info(entity, 'Business layer ready!');
     }
 
-    private async executeCommand(message: string): Promise<EventResponseInterface | EventResponseRegisterInterface | EventResponseRegisterErrorInterface> {
+    private async processWSEvents(type: number, content: any, sender?: string) {
+        switch (type) {
+            case WEBSOCKET_EVENT_TYPES.CONNECTED:
+                this.db.insert(sender, this.rest.getRESTApiAddress());
+                this.db.set(this.serverId, sender);
+                await this.en.request(
+                    Environment.getValue(ENV_VARS.EVENT_CONNECTED_URL, null),
+                    'POST',
+                    {
+                        uid: sender,
+                        timestamp: Date.now()
+                    });
+                break;
+            case WEBSOCKET_EVENT_TYPES.DISCONNECTED:
+                this.db.delete(sender);
+                this.db.removeSet(this.serverId, sender);
+                await this.en.request(
+                    Environment.getValue(ENV_VARS.EVENT_DISCONNECTED_URL, null),
+                    'POST',
+                    {
+                        uid: sender,
+                        timestamp: Date.now()
+                    });
+                break;
+            case WEBSOCKET_EVENT_TYPES.MESSAGE:
+                await this.en.request(
+                    Environment.getValue(ENV_VARS.EVENT_MESSAGE_URL, null),
+                    'POST',
+                    {
+                        uid: sender,
+                        data: content,
+                        timestamp: Date.now()
+                    });
+                break;
 
-        let vResponse: jsonschema.ValidatorResult = null;
-        try {
-            let jEvent = JSON.parse(message);
-            vResponse = this.validateEvent(jEvent);
-            if (!vResponse.valid) throw new Error(JSON.stringify(vResponse.errors));
-            else {
-                let event = await this.db.insert(jEvent);
-                this.ea.setAlarmForEvent(event.ops[0]);
-                return {
-                    code: REQUEST_RESPONSES.SUCCESS,
-                    message: 'Event was registered.',
-                    event: event.ops[0]
-                };
-            }
-        } catch (error) {
-            this.log.warn(entity, `Could not parse the event insertion request`);
-            this.log.debug(entity, error.message);
-            return {
-                code: REQUEST_RESPONSES.ERROR,
-                message: 'No event was inserted for the message received.',
-                messageReceived: message,
-                formatVerificationErrors: vResponse?.errors
-            };
+            default:
+                break;
         }
     }
 
-    private validateEvent(jsonEvent: any): jsonschema.ValidatorResult {
-        const schema = {
-            "id": "/Event",
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-                "event": {
-                    "type": "string",
-                    "minLength": 4,
-                    "maxLength": 13
-                },
-                "when": {
-                    "type": "number",
-                    "minimum": Date.now()
-                }
-            },
-            "required": ["event", "when"]
-        };
-        return this.validator.validate(jsonEvent, schema);
-    }
+    private processRESTApiEvents(type: number, content: any, sender?: string,) {
+        switch (type) {
+            case REST_EVENT_TYPES.BROADCAST:
+                this.ws.sendBroadcast(content, sender);
+                break;
+            case REST_EVENT_TYPES.SEND_MESSAGE_REQUEST:
+                this.ws.sendMessage(content.uid, content.data);
+                break;
 
+            default:
+                break;
+        }
+    }
 }

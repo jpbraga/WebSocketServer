@@ -7,9 +7,9 @@ export class LogService {
 
     private constructor() {
         let opts = {
-            logFilePath:process.env.LOG_FILE,
+            //logFilePath:process.env.LOG_FILE,
             timestampFormat:'YYYY-MM-DD HH:mm:ss.SSS',
-            level: process.env.LOG_LEVEL
+            level: (!process.env.LOG_LEVEL)?'debug':process.env.LOG_LEVEL
         }
         this.log = SimpleNodeLogger.createSimpleLogger(opts)
         

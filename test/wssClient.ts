@@ -26,9 +26,10 @@ export class WSSClient {
             });
         };
 
-        this.client.onclose = () => {
+        this.client.onclose = (event) => {
             if(this.connCallback) this.connCallback({
-                code: 1
+                code: 1,
+                content: JSON.stringify(event)
             });
         };
 

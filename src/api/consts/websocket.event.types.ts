@@ -1,0 +1,5 @@
+export const WEBSOCKET_EVENT_TYPES = {
+    CONNECTED: 0,
+    DISCONNECTED: 1,
+    MESSAGE: 2
+}

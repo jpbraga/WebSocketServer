@@ -1,6 +1,7 @@
 import WebSocketServer = require('websocket');
 
 export interface MessageEventNotification {
-    sender: WebSocketServer.connection,
+    type: number,
+    sender?: string,
     content: any
 }

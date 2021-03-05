@@ -1,0 +1,4 @@
+export const REST_EVENT_TYPES = {
+    SEND_MESSAGE_REQUEST: 0,
+    BROADCAST: 1
+}
