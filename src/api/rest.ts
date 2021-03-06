@@ -52,12 +52,14 @@ export class RESTApi {
     }
 
     private sendMessageRequest(req, res) {
+        console.log(req.body);
+        console.log(req.params);
         const validation = this.sendMessageRequestSchema(req, res);
         if (!validation.isValid) res.send(validation);
         else {
             this.notifyEventListeners(REST_EVENT_TYPES.SEND_MESSAGE_REQUEST, {
                 uid: req.params.uid,
-                data: req.body.payload
+                payload: req.body.payload
             });
             res.send(validation);
         }
@@ -71,11 +73,13 @@ export class RESTApi {
     }
 
     public broadcast(req, res) {
+        let data = JSON.parse(req.body.payload);
         const validation = this.broadcastSchema(req, res);
         if (!validation.isValid) res.send(validation);
         else {
             this.notifyEventListeners(REST_EVENT_TYPES.BROADCAST, {
-                data: req.body.payload
+                payload: req.body.payload,
+                uid: data.uid
             });
             res.send(validation);
         }

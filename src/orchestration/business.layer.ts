@@ -6,7 +6,6 @@ import { MessageEventNotification } from "../interfaces/event.message.notificati
 import { RESTApi } from "../api/rest";
 import { WEBSOCKET_EVENT_TYPES } from "../api/consts/websocket.event.types";
 import { REST_EVENT_TYPES } from "../api/consts/rest.event.types";
-import { MessageInterface } from "../interfaces/message";
 import { Environment } from "../util/environment";
 import { ENV_VARS } from "../util/consts/env.vars";
 
@@ -32,7 +31,7 @@ export class BusinessLayer {
         this.log.debug(entity, 'WebSocket events listener registered!');
 
         this.rest.registerEventListener(async (event: MessageEventNotification) => {
-            this.processRESTApiEvents(event.type, event.content, event.sender);
+            this.processRESTApiEvents(event.type, JSON.parse(event.content.payload), event.content.uid);
         });
         this.log.debug(entity, 'RESTApi event listener registered!');
 
@@ -88,10 +87,10 @@ export class BusinessLayer {
     private processRESTApiEvents(type: number, content: any, sender?: string,) {
         switch (type) {
             case REST_EVENT_TYPES.BROADCAST:
-                this.ws.sendBroadcast(content, sender);
+                this.ws.sendBroadcast(JSON.stringify({payload:content}), sender);
                 break;
             case REST_EVENT_TYPES.SEND_MESSAGE_REQUEST:
-                this.ws.sendMessage(content.uid, content.data);
+                this.ws.sendMessage(sender, JSON.stringify({payload:content}));
                 break;
 
             default:
