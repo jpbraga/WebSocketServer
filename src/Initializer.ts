@@ -5,6 +5,8 @@ import { WSServer } from './api/websocket';
 import { EventNotification } from "./services/event.notification";
 import { RESTApi } from "./api/rest";
 import { BusinessLayer } from "./orchestration/business.layer";
+import { Environment } from "./util/environment";
+import { ENV_VARS } from "./util/consts/env.vars";
 
 const result = dotenv.config();
 if (result.error) {
@@ -30,6 +32,10 @@ export class Initializer {
 
   private async init() {
     try {
+      if(parseInt(Environment.getValue(ENV_VARS.SERVER_QUERY, '0')) === 1) {
+        this.log.info(entity, 'SERVER_QUERY is enabled!');
+      } 
+      
       await this.db.init();
       await this.wss.init();
       await this.rest.init();

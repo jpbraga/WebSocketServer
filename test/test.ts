@@ -8,12 +8,16 @@ client.registerConnectionListener((status) => {
     client.sendMessage(JSON.stringify(
     {
         jwt_auth_token: token,
-        message: "teste message content from " + guid
+        SERVER_QUERY: ['wss_server_details']
     }))
 });
 
 client.registerMessageListener((msg) => {
-    console.log(msg);
+    try {
+        console.log(JSON.parse(msg));
+    } catch (err) {
+        console.log(msg);
+    }
 });
 
 client.connect('127.0.0.1', '8080');

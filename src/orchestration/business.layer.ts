@@ -8,6 +8,8 @@ import { WEBSOCKET_EVENT_TYPES } from "../api/consts/websocket.event.types";
 import { REST_EVENT_TYPES } from "../api/consts/rest.event.types";
 import { Environment } from "../util/environment";
 import { ENV_VARS } from "../util/consts/env.vars";
+import { SERVER_QUERY_TYPE } from "./consts/server.queries";
+import ip = require('ip');
 
 const entity: string = "BusinessLayer";
 const REDIS_SERVERS_LIST = "SERVERS";
@@ -69,6 +71,13 @@ export class BusinessLayer {
                     });
                 break;
             case WEBSOCKET_EVENT_TYPES.MESSAGE:
+                if(parseInt(Environment.getValue(ENV_VARS.SERVER_QUERY, '0')) === 1) {
+                    const queryContent = this.processServerQueries(content);
+                    if(queryContent !== {}) {
+                        this.ws.sendMessage(sender, JSON.stringify(queryContent));
+                        return;
+                    }
+                }
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_MESSAGE_URL, null),
                     'POST',
@@ -87,13 +96,56 @@ export class BusinessLayer {
     private processRESTApiEvents(type: number, content: any, sender?: string,) {
         switch (type) {
             case REST_EVENT_TYPES.BROADCAST:
-                this.ws.sendBroadcast(JSON.stringify({payload:content}), sender);
+                this.ws.sendBroadcast(JSON.stringify({ payload: content }), sender);
                 break;
             case REST_EVENT_TYPES.SEND_MESSAGE_REQUEST:
-                this.ws.sendMessage(sender, JSON.stringify({payload:content}));
+                this.ws.sendMessage(sender, JSON.stringify({ payload: content }));
                 break;
 
             default:
+                break;
+        }
+    }
+
+    private processServerQueries(content: any) {
+        try {
+            let queryContent = {};
+            if(!content.SERVER_QUERY || content.SERVER_QUERY.length === 0) return queryContent;
+
+            for (let query of content.SERVER_QUERY) {
+                queryContent[query] = this.processQuery(query);
+            }
+            return queryContent;
+        } catch (err) {
+            this.log.warn(entity, `Could not parse content to process server queries`);
+            return false;
+        }
+    }
+
+    private processQuery(type: string) {
+        switch (type) {
+            case SERVER_QUERY_TYPE.WSS_SERVER_ID:
+                return this.serverId;
+                break;
+            case SERVER_QUERY_TYPE.WSS_SERVER_IP:
+                return ip.address(null, "ipv4");
+                break;
+            case SERVER_QUERY_TYPE.WSS_SERVER_DETAILS:
+                return {
+                    serverId: this.serverId,
+                    ip: ip.address(null, "ipv4"),
+                    restPort: this.rest.getRestPort(),
+                    restAddress: this.rest.getRESTApiAddress(),
+                    websocketAddress: this.ws.getWSSAddress(),
+                    websocketPort: this.ws.getWSSPort(),
+                    connectedClients: this.ws.getClientCount()
+                };
+                break;
+            case SERVER_QUERY_TYPE.WSS_SERVER_CLI_COUNT:
+                return this.ws.getClientCount();
+                break;
+            default:
+                return null;
                 break;
         }
     }

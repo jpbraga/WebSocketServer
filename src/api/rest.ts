@@ -44,6 +44,11 @@ export class RESTApi {
     public getRESTApiAddress(): string {
         return this.restApiAddress;
     }
+
+    public getRestPort(): number {
+        return PORT;
+    }
+
     private sendMessageRequestSchema(req, res): ValidationInterface {
         const schema = Joi.object({
             payload: Joi.string().required()

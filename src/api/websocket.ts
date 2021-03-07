@@ -168,6 +168,18 @@ export class WSServer {
         return true;
     }
 
+    public getWSSAddress():string {
+        return `ws://${ip.address(null, "ipv4")}:${this.server.address()['port']}`;
+    }
+
+    public getWSSPort():number {
+        return this.server.address()['port'];
+    }
+
+    public getClientCount (): number {
+        return this.poolCount;
+    }
+
     public registerEventListener(callback: EventMessageCallback): string {
         let guid: string = Guid.generateGuid();
         this.eventListeners[guid] = callback;

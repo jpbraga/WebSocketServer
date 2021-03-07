@@ -2,7 +2,6 @@ import * as dotenv from "dotenv";
 import { Database } from "./database/database";
 import { WSServer } from './api/websocket';
 import { EventNotification } from "./services/event.notification";
-import jsonschema = require('jsonschema');
 import { Initializer } from "./Initializer";
 import { JWTAuthorizer } from "./authorizer/authorizer";
 import { RESTApi } from "./api/rest";
