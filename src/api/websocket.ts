@@ -77,7 +77,9 @@ export class WSServer {
                         return;
                     }
 
-                    this.log.debug(entity, `Received Message: ${message?.utf8Data}`);
+                    if(parseInt(Environment.getValue(ENV_VARS.SHOW_INCOMMING, '0'))) {
+                        this.log.debug(entity, `Received Message: ${message?.utf8Data}`);
+                    } else this.log.debug(entity, `Message received`);
                     let authorize = this.authorize(payload.jwt_auth_token);
                     if (authorize.isAuthorized) {
                         if (!this.connectionPool[authorize[this.uidKey]]) {
@@ -88,10 +90,11 @@ export class WSServer {
                             this.log.info(entity, `${this.poolCount} authorized clients connected`);
                         }
                         this.connectionPool[authorize[this.uidKey]] = connection;
-                        payload.jwt_auth_token_content = {
-                            content: authorize.content
+                        if(parseInt(Environment.getValue(ENV_VARS.FWRD_JWT_DECODED, '0'))) {
+                            payload.jwt_auth_token_content = {
+                                content: authorize.content
+                            }
                         }
-                        payload.jwt_auth_token_content[this.uidKey] = authorize[this.uidKey];
                         this.notifyEventListeners(WEBSOCKET_EVENT_TYPES.MESSAGE, authorize[this.uidKey], payload);
                     } else {
                         if(authorize && authorize[this.uidKey]) delete this.connectionPool[authorize[this.uidKey]];

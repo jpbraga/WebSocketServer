@@ -5,11 +5,20 @@ import { Guid } from "../src/util/guid";
 let client: WSSClient = new WSSClient();
 client.registerConnectionListener((status) => {
     console.log(status);
+    if(status.code === 1) process.exit(0);
     client.sendMessage(JSON.stringify(
     {
         jwt_auth_token: token,
         SERVER_QUERY: ['wss_server_details']
-    }))
+    }));
+    setInterval(() => {
+        console.log("Sending a message...");
+        client.sendMessage(JSON.stringify(
+            {
+                jwt_auth_token: token,
+                message: `this is a message from ${guid} sent at ${Date.now()}`
+            }));
+    }, 10000);
 });
 
 client.registerMessageListener((msg) => {

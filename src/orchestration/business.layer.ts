@@ -36,7 +36,7 @@ export class BusinessLayer {
         this.log.debug(entity, 'WebSocket events listener registered!');
 
         this.rest.registerEventListener(async (event: MessageEventNotification) => {
-            const payload = (!event.content.payload)?'{}':event.content.payload
+            const payload = (!event.content.payload) ? '{}' : event.content.payload
             this.processRESTApiEvents(event.type, JSON.parse(payload), event.content[this.uidKey], event.content.res);
         });
         this.log.debug(entity, 'RESTApi event listener registered!');
@@ -50,7 +50,7 @@ export class BusinessLayer {
         this.log.info(entity, 'Business layer ready!');
     }
 
-    private async processWSEvents(type: number, content: any, sender?: string, req?:express.Response) {
+    private async processWSEvents(type: number, content: any, sender?: string, req?: express.Response) {
         let payload = {
             timestamp: Date.now()
         }
@@ -76,7 +76,7 @@ export class BusinessLayer {
             case WEBSOCKET_EVENT_TYPES.MESSAGE:
                 if (parseInt(Environment.getValue(ENV_VARS.SERVER_QUERY, '0')) === 1) {
                     const queryContent = this.processServerQueries(content);
-                    if (queryContent !== {}) {
+                    if (queryContent) {
                         this.ws.sendMessage(sender, JSON.stringify(queryContent));
                         return;
                     }
@@ -86,6 +86,9 @@ export class BusinessLayer {
                     Environment.getValue(ENV_VARS.EVENT_MESSAGE_URL, null),
                     'POST',
                     payload);
+                if (parseInt(Environment.getValue(ENV_VARS.SHOW_OUTGOING, '0'))) {
+                    this.log.debug(entity, `Content sent: ${JSON.stringify(payload)}`);
+                }
                 break;
 
             default:
@@ -93,7 +96,7 @@ export class BusinessLayer {
         }
     }
 
-    private processRESTApiEvents(type: number, content: any, sender?: string, res?:express.Response) {
+    private processRESTApiEvents(type: number, content: any, sender?: string, res?: express.Response) {
         switch (type) {
             case REST_EVENT_TYPES.BROADCAST:
                 this.ws.sendBroadcast(JSON.stringify({ payload: content }), sender);
@@ -113,8 +116,7 @@ export class BusinessLayer {
     private processServerQueries(content: any) {
         try {
             let queryContent = {};
-            if (!content.SERVER_QUERY || content.SERVER_QUERY.length === 0) return queryContent;
-
+            if (!content.SERVER_QUERY || content.SERVER_QUERY.length === 0) return null;
             for (let query of content.SERVER_QUERY) {
                 queryContent[query] = this.processQuery(query);
             }
