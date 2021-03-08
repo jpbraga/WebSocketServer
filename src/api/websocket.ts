@@ -25,6 +25,7 @@ export class WSServer {
     private poolCount = 0;
     private eventListeners = {};
     private authorizer: Authorizer;
+    private uidKey = Environment.getValue(ENV_VARS.JWT_IDENTIFIER, "uid");
 
     constructor(authorizer: Authorizer) {
         this.log = LogService.getInstnce();
@@ -79,21 +80,21 @@ export class WSServer {
                     this.log.debug(entity, `Received Message: ${message?.utf8Data}`);
                     let authorize = this.authorize(payload.jwt_auth_token);
                     if (authorize.isAuthorized) {
-                        if (!this.connectionPool[authorize.uid]) {
-                            this.log.debug(entity, `Peer ${connection.remoteAddress} is authorized as ${authorize.uid}.`);
+                        if (!this.connectionPool[authorize[this.uidKey]]) {
+                            this.log.debug(entity, `Peer ${connection.remoteAddress} is authorized as ${authorize[this.uidKey]}.`);
                             clearTimeout(timeout);
-                            this.notifyEventListeners(WEBSOCKET_EVENT_TYPES.CONNECTED, authorize.uid);
+                            this.notifyEventListeners(WEBSOCKET_EVENT_TYPES.CONNECTED, authorize[this.uidKey]);
                             this.poolCount++;
                             this.log.info(entity, `${this.poolCount} authorized clients connected`);
                         }
-                        this.connectionPool[authorize.uid] = connection;
+                        this.connectionPool[authorize[this.uidKey]] = connection;
                         payload.jwt_auth_token_content = {
-                            uid: authorize.uid,
                             content: authorize.content
                         }
-                        this.notifyEventListeners(WEBSOCKET_EVENT_TYPES.MESSAGE, authorize.uid, payload);
+                        payload.jwt_auth_token_content[this.uidKey] = authorize[this.uidKey];
+                        this.notifyEventListeners(WEBSOCKET_EVENT_TYPES.MESSAGE, authorize[this.uidKey], payload);
                     } else {
-                        delete this.connectionPool[authorize?.uid];
+                        if(authorize && authorize[this.uidKey]) delete this.connectionPool[authorize[this.uidKey]];
                         this.log.debug(entity, `Peer ${connection.remoteAddress} made an unauthorized request: ${content}.`);
                         clearTimeout(timeout);
                         connection.close(WebSocketServer.connection.CLOSE_REASON_POLICY_VIOLATION, `Property jwt_auth_token missing in the root of the payload`);
@@ -152,7 +153,7 @@ export class WSServer {
             this.log.debug(entity, `Sending a single message to ${uid} (${connection.remoteAddress})`);
             connection.sendUTF(JSON.stringify(content));
         } else {
-            this.log.warn(entity, `No connection found for the provided uid ${uid}`);
+            this.log.warn(entity, `No connection found for the provided ${this.uidKey} ${uid}`);
             this.removeFromPool(uid);
         }
     }

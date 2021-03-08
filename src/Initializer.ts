@@ -35,7 +35,7 @@ export class Initializer {
       if(parseInt(Environment.getValue(ENV_VARS.SERVER_QUERY, '0')) === 1) {
         this.log.info(entity, 'SERVER_QUERY is enabled!');
       } 
-      
+      this.log.info(entity, `The identifier within the JWT TOKEN is set to be: ${Environment.getValue(ENV_VARS.JWT_IDENTIFIER, "uid")}`);
       await this.db.init();
       await this.wss.init();
       await this.rest.init();

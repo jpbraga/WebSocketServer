@@ -1,3 +1,4 @@
+import express = require('express');
 import { WSServer } from "../api/websocket";
 import { Database } from "../database/database";
 import { EventNotification } from "../services/event.notification";
@@ -10,6 +11,7 @@ import { Environment } from "../util/environment";
 import { ENV_VARS } from "../util/consts/env.vars";
 import { SERVER_QUERY_TYPE } from "./consts/server.queries";
 import ip = require('ip');
+import { ProbeData } from "../interfaces/rest.probe.data";
 
 const entity: string = "BusinessLayer";
 const REDIS_SERVERS_LIST = "SERVERS";
@@ -17,6 +19,7 @@ const REDIS_SERVERS_LIST = "SERVERS";
 export class BusinessLayer {
 
     private log: LogService;
+    private uidKey: string = Environment.getValue(ENV_VARS.JWT_IDENTIFIER, "uid");
     constructor(private db: Database,
         private en: EventNotification,
         private ws: WSServer,
@@ -33,7 +36,8 @@ export class BusinessLayer {
         this.log.debug(entity, 'WebSocket events listener registered!');
 
         this.rest.registerEventListener(async (event: MessageEventNotification) => {
-            this.processRESTApiEvents(event.type, JSON.parse(event.content.payload), event.content.uid);
+            const payload = (!event.content.payload)?'{}':event.content.payload
+            this.processRESTApiEvents(event.type, JSON.parse(payload), event.content[this.uidKey], event.content.res);
         });
         this.log.debug(entity, 'RESTApi event listener registered!');
 
@@ -46,7 +50,11 @@ export class BusinessLayer {
         this.log.info(entity, 'Business layer ready!');
     }
 
-    private async processWSEvents(type: number, content: any, sender?: string) {
+    private async processWSEvents(type: number, content: any, sender?: string, req?:express.Response) {
+        let payload = {
+            timestamp: Date.now()
+        }
+        payload[this.uidKey] = sender;
         switch (type) {
             case WEBSOCKET_EVENT_TYPES.CONNECTED:
                 this.db.insert(sender, this.rest.getRESTApiAddress());
@@ -54,38 +62,30 @@ export class BusinessLayer {
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_CONNECTED_URL, null),
                     'POST',
-                    {
-                        uid: sender,
-                        timestamp: Date.now()
-                    });
+                    payload);
                 break;
             case WEBSOCKET_EVENT_TYPES.DISCONNECTED:
                 this.db.delete(sender);
                 this.db.removeSet(this.serverId, sender);
+
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_DISCONNECTED_URL, null),
                     'POST',
-                    {
-                        uid: sender,
-                        timestamp: Date.now()
-                    });
+                    payload);
                 break;
             case WEBSOCKET_EVENT_TYPES.MESSAGE:
-                if(parseInt(Environment.getValue(ENV_VARS.SERVER_QUERY, '0')) === 1) {
+                if (parseInt(Environment.getValue(ENV_VARS.SERVER_QUERY, '0')) === 1) {
                     const queryContent = this.processServerQueries(content);
-                    if(queryContent !== {}) {
+                    if (queryContent !== {}) {
                         this.ws.sendMessage(sender, JSON.stringify(queryContent));
                         return;
                     }
                 }
+                payload["data"] = content;
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_MESSAGE_URL, null),
                     'POST',
-                    {
-                        uid: sender,
-                        data: content,
-                        timestamp: Date.now()
-                    });
+                    payload);
                 break;
 
             default:
@@ -93,13 +93,16 @@ export class BusinessLayer {
         }
     }
 
-    private processRESTApiEvents(type: number, content: any, sender?: string,) {
+    private processRESTApiEvents(type: number, content: any, sender?: string, res?:express.Response) {
         switch (type) {
             case REST_EVENT_TYPES.BROADCAST:
                 this.ws.sendBroadcast(JSON.stringify({ payload: content }), sender);
                 break;
             case REST_EVENT_TYPES.SEND_MESSAGE_REQUEST:
                 this.ws.sendMessage(sender, JSON.stringify({ payload: content }));
+                break;
+            case REST_EVENT_TYPES.PROBE:
+                res.status(200).send(this.processQuery(SERVER_QUERY_TYPE.WSS_SERVER_DETAILS));
                 break;
 
             default:
@@ -110,7 +113,7 @@ export class BusinessLayer {
     private processServerQueries(content: any) {
         try {
             let queryContent = {};
-            if(!content.SERVER_QUERY || content.SERVER_QUERY.length === 0) return queryContent;
+            if (!content.SERVER_QUERY || content.SERVER_QUERY.length === 0) return queryContent;
 
             for (let query of content.SERVER_QUERY) {
                 queryContent[query] = this.processQuery(query);
@@ -148,5 +151,9 @@ export class BusinessLayer {
                 return null;
                 break;
         }
+    }
+
+    private probe(): ProbeData {
+        return <ProbeData>this.processQuery(SERVER_QUERY_TYPE.WSS_SERVER_DETAILS);
     }
 }

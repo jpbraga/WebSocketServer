@@ -6,6 +6,9 @@ import { LogService } from '../util/log.services';
 import { Guid } from '../util/guid';
 import { EventMessageCallback } from '../interfaces/event.message.callback';
 import { REST_EVENT_TYPES } from './consts/rest.event.types';
+import { Environment } from '../util/environment';
+import { ENV_VARS } from '../util/consts/env.vars';
+import { ProbeExternalMethod } from '../interfaces/rest.probe.external.method';
 
 const entity: string = "RESTApi";
 const PORT = 80;
@@ -17,6 +20,7 @@ export class RESTApi {
     private eventListeners = {};
     private restApiAddress: string = null;
     private serverId: string = null;
+    private uidKey:string = Environment.getValue(ENV_VARS.JWT_IDENTIFIER, "uid");
 
     constructor(serverId: string) {
         this.log = LogService.getInstnce();
@@ -25,6 +29,7 @@ export class RESTApi {
 
         this.app.post(`/${this.serverId}/sendMessage/:uid`, (req: express.Request, res: express.Response) => { this.sendMessageRequest(req,res)});
         this.app.put(`/${this.serverId}/broadcast`, (req: express.Request, res: express.Response) => { this.broadcast(req,res)});
+        this.app.get(`/${this.serverId}/probe`, (req: express.Request, res: express.Response) => { this.probe(req,res)});
         this.app.get(`/${this.serverId}/health`, (req: express.Request, res: express.Response) => { this.healthCheck(req,res)});
     }
 
@@ -57,15 +62,14 @@ export class RESTApi {
     }
 
     private sendMessageRequest(req, res) {
-        console.log(req.body);
-        console.log(req.params);
         const validation = this.sendMessageRequestSchema(req, res);
         if (!validation.isValid) res.send(validation);
         else {
-            this.notifyEventListeners(REST_EVENT_TYPES.SEND_MESSAGE_REQUEST, {
-                uid: req.params.uid,
+            let payload = {
                 payload: req.body.payload
-            });
+            };
+            payload[this.uidKey] = req.params.uid;
+            this.notifyEventListeners(REST_EVENT_TYPES.SEND_MESSAGE_REQUEST, payload);
             res.send(validation);
         }
     }
@@ -82,16 +86,22 @@ export class RESTApi {
         const validation = this.broadcastSchema(req, res);
         if (!validation.isValid) res.send(validation);
         else {
-            this.notifyEventListeners(REST_EVENT_TYPES.BROADCAST, {
+            let payload = {
                 payload: req.body.payload,
-                uid: data.uid
-            });
+            }
+            payload[this.uidKey] = data[this.uidKey];
+            this.notifyEventListeners(REST_EVENT_TYPES.BROADCAST, payload);
             res.send(validation);
         }
     }
 
     private healthCheck(req, res) {
-        res.send(200);
+        res.status(200).send(this.serverId);
+    }
+
+    private probe(req, res) {
+            this.log.info(entity,'The server was probed!');
+            this.notifyEventListeners(REST_EVENT_TYPES.PROBE, { res: res });
     }
 
     // helper functions
