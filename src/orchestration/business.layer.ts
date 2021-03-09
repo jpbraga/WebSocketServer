@@ -20,6 +20,8 @@ export class BusinessLayer {
 
     private log: LogService;
     private uidKey: string = Environment.getValue(ENV_VARS.JWT_IDENTIFIER, "uid");
+    private podName: string = Environment.getValue(ENV_VARS.POD_NAME);
+    private namespace: string = Environment.getValue(ENV_VARS.POD_NAMESPACE);
     constructor(private db: Database,
         private en: EventNotification,
         private ws: WSServer,
@@ -27,6 +29,8 @@ export class BusinessLayer {
         private serverId: string) {
         this.log = LogService.getInstnce();
         this.log.info(entity, `Server reference id is ${this.serverId}`);
+        this.log.info(entity, `The pod name for the server is ${this.podName}`)
+        this.log.info(entity, `The namespace for the server within the cluster is ${this.namespace}`)
     }
 
     public async init() {
@@ -43,22 +47,24 @@ export class BusinessLayer {
 
         await this.db.set(REDIS_SERVERS_LIST, JSON.stringify({
             serverId: this.serverId,
-            address: this.rest.getRESTApiAddress()
+            address: this.rest.getRESTApiAddress(),
+            podName: this.podName,
+            namespace: this.namespace
         }));
         this.log.debug(entity, `Server ${this.serverId} registered in Redis`);
 
         this.log.info(entity, 'Business layer ready!');
     }
 
-    private async processWSEvents(type: number, content: any, sender?: string, req?: express.Response) {
+    private async processWSEvents(type: number, content?: any, sender?: string) {
         let payload = {
             timestamp: Date.now()
         }
-        payload[this.uidKey] = sender;
         switch (type) {
             case WEBSOCKET_EVENT_TYPES.CONNECTED:
                 this.db.insert(sender, this.rest.getRESTApiAddress());
                 this.db.set(this.serverId, sender);
+                payload[this.uidKey] = sender;
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_CONNECTED_URL, null),
                     'POST',
@@ -67,7 +73,7 @@ export class BusinessLayer {
             case WEBSOCKET_EVENT_TYPES.DISCONNECTED:
                 this.db.delete(sender);
                 this.db.removeSet(this.serverId, sender);
-
+                payload['users'] = [sender];
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_DISCONNECTED_URL, null),
                     'POST',
@@ -82,6 +88,7 @@ export class BusinessLayer {
                     }
                 }
                 payload["data"] = content;
+                payload[this.uidKey] = sender;
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_MESSAGE_URL, null),
                     'POST',
