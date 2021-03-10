@@ -15,7 +15,7 @@ module.exports = class Tasks {
 
   static() {
     gulp
-      .src(["package.json", "package-lock.json", ".env"])
+      .src(["package.json", "package-lock.json"])
       .pipe(gulp.dest("dist/src"));
     return gulp.src(["src/**/*.json"]).pipe(gulp.dest("dist"));
   }

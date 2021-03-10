@@ -21,10 +21,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Environment = void 0;
 const dotenv = __importStar(require("dotenv"));
-const result = dotenv.config();
-if (result.error) {
-    throw result.error;
-}
+dotenv.config();
 class Environment {
     static getValue(env, defaultValue) {
         return (process.env[env]) ? process.env[env] : defaultValue;

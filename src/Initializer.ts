@@ -8,11 +8,6 @@ import { BusinessLayer } from "./orchestration/business.layer";
 import { Environment } from "./util/environment";
 import { ENV_VARS } from "./util/consts/env.vars";
 
-const result = dotenv.config();
-if (result.error) {
-  throw result.error;
-}
-
 const entity: string = "Initializer";
 
 export class Initializer {
