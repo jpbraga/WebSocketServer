@@ -63,8 +63,7 @@ export class BusinessLayer {
         switch (type) {
             case WEBSOCKET_EVENT_TYPES.CONNECTED:
                 this.db.insert(sender, this.rest.getRESTApiAddress());
-                this.db.set(this.serverId, sender);
-                payload[this.uidKey] = sender;
+                this.db.set(this.serverId, content[this.uidKey]);
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_CONNECTED_URL, null),
                     'POST',

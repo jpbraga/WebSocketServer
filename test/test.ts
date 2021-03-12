@@ -11,14 +11,14 @@ client.registerConnectionListener((status) => {
         jwt_auth_token: token,
         SERVER_QUERY: ['wss_server_details']
     }));
-    setInterval(() => {
+  /*  setInterval(() => {
         console.log("Sending a message...");
         client.sendMessage(JSON.stringify(
             {
                 jwt_auth_token: token,
                 message: `this is a message from ${guid} sent at ${Date.now()}`
             }));
-    }, 10000);
+    }, 10000);*/
 });
 
 client.registerMessageListener((msg) => {
