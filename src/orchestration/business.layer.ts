@@ -142,8 +142,17 @@ export class BusinessLayer {
             case SERVER_QUERY_TYPE.WSS_SERVER_IP:
                 return ip.address(null, "ipv4");
                 break;
+            case SERVER_QUERY_TYPE.WSS_SERVER_POD_DETAILS:
+                return {
+                    podName: Environment.getValue(ENV_VARS.POD_NAME, null),
+                    namespace: Environment.getValue(ENV_VARS.POD_NAMESPACE, null),
+                    ip: ip.address(null, "ipv4"),
+                };
+                break;
             case SERVER_QUERY_TYPE.WSS_SERVER_DETAILS:
                 return {
+                    podName: Environment.getValue(ENV_VARS.POD_NAME, null),
+                    namespace: Environment.getValue(ENV_VARS.POD_NAMESPACE, null),
                     serverId: this.serverId,
                     ip: ip.address(null, "ipv4"),
                     restPort: this.rest.getRestPort(),

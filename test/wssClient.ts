@@ -8,9 +8,10 @@ export class WSSClient {
 
     constructor() { }
 
-    public connect(ip:string, port:string) {
-
-        this.client = new W3CWebSocket.w3cwebsocket(`ws://${ip}:${port}/`, 'echo-protocol');
+    public connect(ip:string, port:string, path:string = "") {
+        const address = `ws://${ip}:${port}${path}`;
+        console.log(address)
+        this.client = new W3CWebSocket.w3cwebsocket(address, 'echo-protocol');
 
         this.client.onerror = (error) => {
             console.error(error.message);
