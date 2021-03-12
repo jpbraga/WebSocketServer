@@ -4,5 +4,6 @@ exports.REST_EVENT_TYPES = void 0;
 exports.REST_EVENT_TYPES = {
     SEND_MESSAGE_REQUEST: 0,
     BROADCAST: 1,
-    PROBE: 2
+    PROBE: 2,
+    DISCONNECT_REQUEST: 3
 };

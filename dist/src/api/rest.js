@@ -32,6 +32,7 @@ class RESTApi {
         this.serverId = serverId;
         this.app.use(express.json());
         this.app.post(`/${this.serverId}/sendMessage/:uid`, (req, res) => { this.sendMessageRequest(req, res); });
+        this.app.post(`/${this.serverId}/disconnect/:uid`, (req, res) => { this.disconnectRequest(req, res); });
         this.app.put(`/${this.serverId}/broadcast`, (req, res) => { this.broadcast(req, res); });
         this.app.get(`/${this.serverId}/probe`, (req, res) => { this.probe(req, res); });
         this.app.get(`/${this.serverId}/health`, (req, res) => { this.healthCheck(req, res); });
@@ -70,8 +71,35 @@ class RESTApi {
             let payload = {
                 payload: req.body.payload
             };
+            if (!req.params.uid) {
+                res.send({ status: 500, isValid: false, message: `The uid must be informed as URL param after the endpoint address` });
+                return;
+            }
             payload[this.uidKey] = req.params.uid;
             this.notifyEventListeners(rest_event_types_1.REST_EVENT_TYPES.SEND_MESSAGE_REQUEST, payload);
+            res.send(validation);
+        }
+    }
+    disconnectRequestSchema(req, res) {
+        const schema = Joi.object({
+            reason: Joi.string().required()
+        });
+        return this.validateRequest(req, schema);
+    }
+    disconnectRequest(req, res) {
+        const validation = this.disconnectRequestSchema(req, res);
+        if (!validation.isValid)
+            res.send(validation);
+        else {
+            let payload = {
+                reason: req.body.reason
+            };
+            if (!req.params.uid) {
+                res.send({ status: 500, isValid: false, message: `The uid must be informed as URL param after the endpoint address` });
+                return;
+            }
+            payload[this.uidKey] = req.params.uid;
+            this.notifyEventListeners(rest_event_types_1.REST_EVENT_TYPES.DISCONNECT_REQUEST, payload);
             res.send(validation);
         }
     }
