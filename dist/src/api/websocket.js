@@ -85,7 +85,7 @@ class WSServer {
                                     timestamp: Date.now()
                                 };
                                 connectedObject[this.uidKey] = authorize.uid;
-                                this.notifyEventListeners(websocket_event_types_1.WEBSOCKET_EVENT_TYPES.CONNECTED, connectedObject);
+                                this.notifyEventListeners(websocket_event_types_1.WEBSOCKET_EVENT_TYPES.CONNECTED, authorize.uid, connectedObject);
                                 this.poolCount++;
                                 this.log.info(entity, `${this.poolCount} authorized clients connected`);
                             }
