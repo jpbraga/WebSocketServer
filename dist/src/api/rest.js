@@ -87,12 +87,14 @@ class RESTApi {
         return this.validateRequest(req, schema);
     }
     disconnectRequest(req, res) {
+        console.log(req.body);
+        console.log(req.params);
         const validation = this.disconnectRequestSchema(req, res);
         if (!validation.isValid)
             res.send(validation);
         else {
             let payload = {
-                reason: req.body.reason
+                payload: JSON.stringify(req.body)
             };
             if (!req.params.uid) {
                 res.send({ status: 500, isValid: false, message: `The uid must be informed as URL param after the endpoint address` });

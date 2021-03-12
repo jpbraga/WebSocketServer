@@ -173,7 +173,7 @@ class WSServer {
     disconnectClient(uid, reason) {
         let connection = this.connectionPool[uid];
         if (connection)
-            connection.close(WebSocketServer.connection.CLOSE_REASON_NOT_PROVIDED, reason);
+            connection.close(WebSocketServer.connection.CLOSE_REASON_NORMAL, reason);
         this.removeFromPool(uid);
     }
     getWSSAddress() {
