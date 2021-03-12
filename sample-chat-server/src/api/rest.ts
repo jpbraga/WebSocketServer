@@ -11,7 +11,7 @@ import { ENV_VARS } from '../util/consts/env.vars';
 import { ProbeExternalMethod } from '../interfaces/rest.probe.external.method';
 
 const entity: string = "RESTApi";
-const PORT = 80;
+const PORT = 8001;
 
 export class RESTApi {
     private app = express();
@@ -19,19 +19,15 @@ export class RESTApi {
     private log: LogService;
     private eventListeners = {};
     private restApiAddress: string = null;
-    private serverId: string = null;
     private uidKey:string = Environment.getValue(ENV_VARS.JWT_IDENTIFIER, "uid");
 
-    constructor(serverId: string) {
+    constructor() {
         this.log = LogService.getInstnce();
-        this.serverId = serverId;
         this.app.use(express.json());
 
-        this.app.post(`/${this.serverId}/sendMessage/:uid`, (req: express.Request, res: express.Response) => { this.sendMessageRequest(req,res)});
-        this.app.post(`/${this.serverId}/disconnect/:uid`, (req: express.Request, res: express.Response) => { this.disconnectRequest(req,res)});
-        this.app.put(`/${this.serverId}/broadcast`, (req: express.Request, res: express.Response) => { this.broadcast(req,res)});
-        this.app.get(`/${this.serverId}/probe`, (req: express.Request, res: express.Response) => { this.probe(req,res)});
-        this.app.get(`/${this.serverId}/health`, (req: express.Request, res: express.Response) => { this.healthCheck(req,res)});
+        this.app.post(`/sendMessage/:uid`, (req: express.Request, res: express.Response) => { this.sendMessageRequest(req,res)});
+        this.app.post(`/connected`, (req: express.Request, res: express.Response) => { this.connected(req,res)});
+        this.app.post(`/disconnected`, (req: express.Request, res: express.Response) => { this.disconnected(req,res)});
     }
 
     public async init() {
@@ -40,8 +36,8 @@ export class RESTApi {
             this.server = this.app.listen(PORT, () => {
                 let host = ip.address(null, "ipv4");
                 let port = this.server.address().port;
-                this.log.info(entity, `Server running on: http://${host}/${this.serverId}`);
-                this.restApiAddress = `http://${host}/${this.serverId}`;
+                this.log.info(entity, `Server running on: http://${host}:${PORT}`);
+                this.restApiAddress = `http://${host}:${PORT}`;
                 resolve(true);
             });
         });
@@ -69,68 +65,52 @@ export class RESTApi {
             let payload = {
                 payload: req.body.payload
             };
-            if(!req.params.uid) {
-                res.send({ status: 500, isValid: false, message: `The uid must be informed as URL param after the endpoint address` });
-                return;
-            }
             payload[this.uidKey] = req.params.uid;
             this.notifyEventListeners(REST_EVENT_TYPES.SEND_MESSAGE_REQUEST, payload);
             res.send(validation);
         }
     }
 
-    private disconnectRequestSchema(req, res): ValidationInterface {
-        const schema = Joi.object({
-            reason: Joi.string().required()
-        });
-        return this.validateRequest(req, schema);
-    }
-
-    private disconnectRequest(req, res) {
-        const validation = this.disconnectRequestSchema(req, res);
-        if (!validation.isValid) res.send(validation);
-        else {
-            let payload = {
-                reason: req.body.reason
-            };
-            if(!req.params.uid) {
-                res.send({ status: 500, isValid: false, message: `The uid must be informed as URL param after the endpoint address` });
-                return;
-            }
-            payload[this.uidKey] = req.params.uid;
-            this.notifyEventListeners(REST_EVENT_TYPES.DISCONNECT_REQUEST, payload);
-            res.send(validation);
-        }
-    }
-
-    private broadcastSchema(req, res): ValidationInterface {
+    private connectedSchema(req, res): ValidationInterface {
         const schema = Joi.object({
             payload: Joi.string().required()
         });
         return this.validateRequest(req, schema);
     }
 
-    public broadcast(req, res) {
+    public connected(req, res) {
         let data = JSON.parse(req.body.payload);
-        const validation = this.broadcastSchema(req, res);
+        const validation = this.connectedSchema(req, res);
         if (!validation.isValid) res.send(validation);
         else {
             let payload = {
                 payload: req.body.payload,
             }
             payload[this.uidKey] = data[this.uidKey];
-            this.notifyEventListeners(REST_EVENT_TYPES.BROADCAST, payload);
+            this.notifyEventListeners(REST_EVENT_TYPES.CONNECTED, payload);
             res.send(validation);
         }
     }
 
-    private healthCheck(req, res) {
-        res.status(200).send(this.serverId);
+    private disconnectedSchema(req, res): ValidationInterface {
+        const schema = Joi.object({
+            payload: Joi.string().required()
+        });
+        return this.validateRequest(req, schema);
     }
 
-    private probe(req, res) {
-            this.log.info(entity,'The server was probed!');
-            this.notifyEventListeners(REST_EVENT_TYPES.PROBE, { res: res });
+    public disconnected(req, res) {
+        let data = JSON.parse(req.body.payload);
+        const validation = this.disconnectedSchema(req, res);
+        if (!validation.isValid) res.send(validation);
+        else {
+            let payload = {
+                payload: req.body.payload,
+            }
+            payload[this.uidKey] = data[this.uidKey];
+            this.notifyEventListeners(REST_EVENT_TYPES.DISCONNECTED, payload);
+            res.send(validation);
+        }
     }
 
     // helper functions

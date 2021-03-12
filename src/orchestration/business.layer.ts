@@ -68,7 +68,7 @@ export class BusinessLayer {
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_CONNECTED_URL, null),
                     'POST',
-                    payload);
+                    content);
                 break;
             case WEBSOCKET_EVENT_TYPES.DISCONNECTED:
                 this.db.delete(sender);
@@ -110,6 +110,9 @@ export class BusinessLayer {
                 break;
             case REST_EVENT_TYPES.SEND_MESSAGE_REQUEST:
                 this.ws.sendMessage(sender, JSON.stringify({ payload: content }));
+                break;
+            case REST_EVENT_TYPES.DISCONNECT_REQUEST:
+                this.ws.disconnectClient(content.uid, content.reason);
                 break;
             case REST_EVENT_TYPES.PROBE:
                 res.status(200).send(this.processQuery(SERVER_QUERY_TYPE.WSS_SERVER_DETAILS));
