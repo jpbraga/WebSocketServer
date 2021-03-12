@@ -29,7 +29,7 @@ client.registerMessageListener((msg) => {
     }
 });
 
-client.connect('127.0.0.1', '80', '/wss');
+client.connect('127.0.0.1', '8080');
 let guid = Guid.generateGuid();
 console.log(guid);
 let token = jwt.sign({

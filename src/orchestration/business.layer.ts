@@ -111,7 +111,8 @@ export class BusinessLayer {
                 this.ws.sendMessage(sender, JSON.stringify({ payload: content }));
                 break;
             case REST_EVENT_TYPES.DISCONNECT_REQUEST:
-                this.ws.disconnectClient(content.uid, content.reason);
+                this.log.info(entity, `Request for disconnection of the ${this.uidKey}:${sender} received - ${content.reason}`);
+                this.ws.disconnectClient(sender, content.reason);
                 break;
             case REST_EVENT_TYPES.PROBE:
                 res.status(200).send(this.processQuery(SERVER_QUERY_TYPE.WSS_SERVER_DETAILS));

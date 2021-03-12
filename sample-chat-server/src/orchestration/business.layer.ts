@@ -73,14 +73,17 @@ export class BusinessLayer {
                 break;
 
             case REST_EVENT_TYPES.CONNECTED:
+                this.log.info(entity, `User `)
                 let token = content.jwt_auth_token;
                 let authorized = this.auth.authorize(token, Environment.getValue(ENV_VARS.JWT_SECRET));
+                this.log.info(entity, `User ${authorized.content.userName} connected`);
                 this.cs.addUser(authorized.uid, authorized.content.userName);
                 break;
 
 
             case REST_EVENT_TYPES.DISCONNECTED:
                 for (let user of content.users) {
+                    this.log.info(entity, `User ${user} disconnected`);
                     this.cs.removeUser(user);
                 }
                 break;

@@ -67,6 +67,8 @@ class BusinessLayer {
                     yield this.en.request(environment_1.Environment.getValue(env_vars_1.ENV_VARS.EVENT_CONNECTED_URL, null), 'POST', content);
                     break;
                 case websocket_event_types_1.WEBSOCKET_EVENT_TYPES.DISCONNECTED:
+                    this.log.info(entity, `Request for disconnection of the ${this.uidKey}:${sender} received - ${content.reason}`);
+                    this.ws.disconnectClient(sender, content.reason);
                     this.db.delete(sender);
                     this.db.removeSet(this.serverId, sender);
                     payload['users'] = [sender];

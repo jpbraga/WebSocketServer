@@ -179,7 +179,7 @@ export class WSServer {
 
     public disconnectClient(uid:string, reason:string) {
         let connection:WebSocketServer.connection  = this.connectionPool[uid];
-        if(connection) connection.close(WebSocketServer.connection.CLOSE_REASON_NOT_PROVIDED,reason);
+        if(connection) connection.close(WebSocketServer.connection.CLOSE_REASON_NORMAL,reason);
         this.removeFromPool(uid);
     }
 

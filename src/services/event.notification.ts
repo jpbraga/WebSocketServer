@@ -1,4 +1,5 @@
-import https = require('https')
+import https = require('https');
+import http = require('http');
 import { ENV_VARS } from '../util/consts/env.vars';
 import { Environment } from '../util/environment';
 import { LogService } from "../util/log.services";
