@@ -64,12 +64,18 @@ class BusinessLayer {
                 case websocket_event_types_1.WEBSOCKET_EVENT_TYPES.CONNECTED:
                     this.db.insert(sender, this.rest.getRESTApiAddress());
                     this.db.set(this.serverId, sender);
+                    if (parseInt(environment_1.Environment.getValue(env_vars_1.ENV_VARS.SHOW_OUTGOING, '0'))) {
+                        this.log.debug(entity, `Content sent: ${JSON.stringify(content)}`);
+                    }
                     yield this.en.request(environment_1.Environment.getValue(env_vars_1.ENV_VARS.EVENT_CONNECTED_URL, null), 'POST', content);
                     break;
                 case websocket_event_types_1.WEBSOCKET_EVENT_TYPES.DISCONNECTED:
                     this.db.delete(sender);
                     this.db.removeSet(this.serverId, sender);
                     payload['users'] = [sender];
+                    if (parseInt(environment_1.Environment.getValue(env_vars_1.ENV_VARS.SHOW_OUTGOING, '0'))) {
+                        this.log.debug(entity, `Content sent: ${JSON.stringify(payload)}`);
+                    }
                     yield this.en.request(environment_1.Environment.getValue(env_vars_1.ENV_VARS.EVENT_DISCONNECTED_URL, null), 'POST', payload);
                     break;
                 case websocket_event_types_1.WEBSOCKET_EVENT_TYPES.MESSAGE:
@@ -82,10 +88,10 @@ class BusinessLayer {
                     }
                     payload["data"] = content;
                     payload[this.uidKey] = sender;
-                    yield this.en.request(environment_1.Environment.getValue(env_vars_1.ENV_VARS.EVENT_MESSAGE_URL, null), 'POST', payload);
                     if (parseInt(environment_1.Environment.getValue(env_vars_1.ENV_VARS.SHOW_OUTGOING, '0'))) {
                         this.log.debug(entity, `Content sent: ${JSON.stringify(payload)}`);
                     }
+                    yield this.en.request(environment_1.Environment.getValue(env_vars_1.ENV_VARS.EVENT_MESSAGE_URL, null), 'POST', payload);
                     break;
                 default:
                     break;

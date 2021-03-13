@@ -73,18 +73,18 @@ export class RESTApi {
 
     private connectedSchema(req, res): ValidationInterface {
         const schema = Joi.object({
-            payload: Joi.string().required()
+            jwt_auth_token: Joi.string().required()
         });
         return this.validateRequest(req, schema);
     }
 
     public connected(req, res) {
-        let data = JSON.parse(req.body.payload);
+        let data = req.body;
         const validation = this.connectedSchema(req, res);
         if (!validation.isValid) res.send(validation);
         else {
             let payload = {
-                payload: req.body.payload,
+                payload: JSON.stringify(req.body),
             }
             payload[this.uidKey] = data[this.uidKey];
             this.notifyEventListeners(REST_EVENT_TYPES.CONNECTED, payload);

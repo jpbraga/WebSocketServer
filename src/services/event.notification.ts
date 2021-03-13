@@ -14,15 +14,9 @@ export class EventNotification {
         this.log = LogService.getInstnce();
     }
 
-    public async request(url: string, method: string, content?: any) {
-        const resourceURL = new URL(url);
-        this.log.debug(entity, `Requesting a ${method} at ${url}`);
+    private typedRequest(request: any, resourceURL: URL, method: string, content?: any): Promise<any> {
         return new Promise((resolve, reject) => {
-            if (!url) {
-                this.log.error(entity, `The HOST for the ${method} method cannot be null`);
-                reject (`The HOST for the ${method} method cannot be null`);
-            }
-            let req = https.request({
+            let req = request.request({
                 method: method,
                 hostname: resourceURL.hostname,
                 path: resourceURL.pathname,
@@ -34,10 +28,33 @@ export class EventNotification {
                 resolve(res);
             });
             req.on('error', (e) => {
+                this.log.error(entity,`Error requesting a ${method} at ${resourceURL.host} - ${e}`);
                 reject(e.message);
             });
             if (content) req.write(JSON.stringify(content));
             req.end();
         });
+    }
+
+    public async request(url: string, method: string, content?: any) {
+        if (!url) {
+            this.log.error(entity, `The HOST for the ${method} method cannot be null`);
+            throw new Error(`The HOST for the ${method} method cannot be null`);
+        }
+        const resourceURL = new URL(url);
+        this.log.debug(entity, `Requesting a ${method} at ${url}`);
+        switch (resourceURL.protocol) {
+            case "http:":
+                this.log.info(entity, `Request to a insecure address`);
+                return await this.typedRequest(http, resourceURL,method, content);
+                break;
+            case "https:":
+                this.log.info(entity, `Request to a secure address`);
+                return await this.typedRequest(https, resourceURL,method, content);
+                break;
+            default:
+                throw new Error(`Protocol (${resourceURL.protocol}) not identified in the provided url: ${url}`);
+                break;
+        }
     }
 }

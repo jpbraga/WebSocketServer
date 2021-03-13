@@ -73,11 +73,11 @@ export class BusinessLayer {
                 break;
 
             case REST_EVENT_TYPES.CONNECTED:
-                this.log.info(entity, `User `)
                 let token = content.jwt_auth_token;
+                this.log.info(entity, `Token received: ${token} `)
                 let authorized = this.auth.authorize(token, Environment.getValue(ENV_VARS.JWT_SECRET));
-                this.log.info(entity, `User ${authorized.content.userName} connected`);
-                this.cs.addUser(authorized.uid, authorized.content.userName);
+                this.log.info(entity, `User ${authorized.content.name} connected`);
+                this.cs.addUser(authorized.uid, authorized.content.name);
                 break;
 
 

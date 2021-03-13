@@ -64,19 +64,27 @@ export class BusinessLayer {
             case WEBSOCKET_EVENT_TYPES.CONNECTED:
                 this.db.insert(sender, this.rest.getRESTApiAddress());
                 this.db.set(this.serverId, sender);
+                if (parseInt(Environment.getValue(ENV_VARS.SHOW_OUTGOING, '0'))) {
+                    this.log.debug(entity, `Content sent: ${JSON.stringify(content)}`);
+                }
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_CONNECTED_URL, null),
                     'POST',
                     content);
+
                 break;
             case WEBSOCKET_EVENT_TYPES.DISCONNECTED:
                 this.db.delete(sender);
                 this.db.removeSet(this.serverId, sender);
                 payload['users'] = [sender];
+                if (parseInt(Environment.getValue(ENV_VARS.SHOW_OUTGOING, '0'))) {
+                    this.log.debug(entity, `Content sent: ${JSON.stringify(payload)}`);
+                }
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_DISCONNECTED_URL, null),
                     'POST',
                     payload);
+
                 break;
             case WEBSOCKET_EVENT_TYPES.MESSAGE:
                 if (parseInt(Environment.getValue(ENV_VARS.SERVER_QUERY, '0')) === 1) {
@@ -88,13 +96,14 @@ export class BusinessLayer {
                 }
                 payload["data"] = content;
                 payload[this.uidKey] = sender;
+                if (parseInt(Environment.getValue(ENV_VARS.SHOW_OUTGOING, '0'))) {
+                    this.log.debug(entity, `Content sent: ${JSON.stringify(payload)}`);
+                }
                 await this.en.request(
                     Environment.getValue(ENV_VARS.EVENT_MESSAGE_URL, null),
                     'POST',
                     payload);
-                if (parseInt(Environment.getValue(ENV_VARS.SHOW_OUTGOING, '0'))) {
-                    this.log.debug(entity, `Content sent: ${JSON.stringify(payload)}`);
-                }
+
                 break;
 
             default:
