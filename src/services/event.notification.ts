@@ -25,10 +25,27 @@ export class EventNotification {
                     "Content-Type": "application/json"
                 }
             }, (res) => {
-                resolve(res);
+                res.resume();
+                res.on('end', () => {
+                    if (!res.complete){
+                        const errMsg = 'The connection was terminated while the message was still being sent';
+                        this.log.error(entity, errMsg);
+                        reject(errMsg);
+                    }
+                });
+
+                res.setEncoding('utf8');
+                res.on('data', (chunk) => {
+                    if(parseInt(Environment.getValue(ENV_VARS.SHOW_INCOMMING, '0'))) {
+                        this.log.debug(entity, `Incomming content for the ${method} method at ${resourceURL.hostname}/${resourceURL.pathname}`);
+                        this.log.debug(entity, chunk);
+                    }
+                    resolve(chunk);
+                });
             });
+
             req.on('error', (e) => {
-                this.log.error(entity,`Error requesting a ${method} at ${resourceURL.host} - ${e}`);
+                this.log.error(entity, `Error requesting a ${method} at ${resourceURL.hostname}/${resourceURL.pathname} - ${e}`);
                 reject(e.message);
             });
             if (content) req.write(JSON.stringify(content));
@@ -46,11 +63,11 @@ export class EventNotification {
         switch (resourceURL.protocol) {
             case "http:":
                 this.log.info(entity, `Request to a insecure address`);
-                return await this.typedRequest(http, resourceURL,method, content);
+                return await this.typedRequest(http, resourceURL, method, content);
                 break;
             case "https:":
                 this.log.info(entity, `Request to a secure address`);
-                return await this.typedRequest(https, resourceURL,method, content);
+                return await this.typedRequest(https, resourceURL, method, content);
                 break;
             default:
                 throw new Error(`Protocol (${resourceURL.protocol}) not identified in the provided url: ${url}`);
