@@ -100,7 +100,7 @@ export class BusinessLayer {
                     this.log.debug(entity, `Content sent: ${JSON.stringify(payload)}`);
                 }
                 await this.en.request(
-                    Environment.getValue(ENV_VARS.EVENT_MESSAGE_URL, null),
+                    Environment.getValue(ENV_VARS.EVENT_MESSAGE_URL, null) + `/${sender}`,
                     'POST',
                     payload);
 

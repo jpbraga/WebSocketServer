@@ -91,7 +91,7 @@ class BusinessLayer {
                     if (parseInt(environment_1.Environment.getValue(env_vars_1.ENV_VARS.SHOW_OUTGOING, '0'))) {
                         this.log.debug(entity, `Content sent: ${JSON.stringify(payload)}`);
                     }
-                    yield this.en.request(environment_1.Environment.getValue(env_vars_1.ENV_VARS.EVENT_MESSAGE_URL, null), 'POST', payload);
+                    yield this.en.request(environment_1.Environment.getValue(env_vars_1.ENV_VARS.EVENT_MESSAGE_URL, null) + `/${sender}`, 'POST', payload);
                     break;
                 default:
                     break;

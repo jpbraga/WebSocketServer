@@ -18,6 +18,7 @@ export class EventNotification {
         return new Promise((resolve, reject) => {
             let req = request.request({
                 method: method,
+                port: resourceURL.port,
                 hostname: resourceURL.hostname,
                 path: resourceURL.pathname,
                 timeout: Environment.getValue(ENV_VARS.REST_REQUEST_TIMEOUT, 15000),
@@ -37,7 +38,7 @@ export class EventNotification {
                 res.setEncoding('utf8');
                 res.on('data', (chunk) => {
                     if(parseInt(Environment.getValue(ENV_VARS.SHOW_INCOMMING, '0'))) {
-                        this.log.debug(entity, `Incomming content for the ${method} method at ${resourceURL.hostname}/${resourceURL.pathname}`);
+                        this.log.debug(entity, `Incomming content for the ${method} method at ${resourceURL.hostname}:${resourceURL.port}${resourceURL.pathname}`);
                         this.log.debug(entity, chunk);
                     }
                     resolve(chunk);
@@ -45,7 +46,7 @@ export class EventNotification {
             });
 
             req.on('error', (e) => {
-                this.log.error(entity, `Error requesting a ${method} at ${resourceURL.hostname}/${resourceURL.pathname} - ${e}`);
+                this.log.error(entity, `Error requesting a ${method} at ${resourceURL.hostname}:${resourceURL.port}${resourceURL.pathname} - ${e}`);
                 reject(e.message);
             });
             if (content) req.write(JSON.stringify(content));

@@ -11,7 +11,7 @@ import { ENV_VARS } from '../util/consts/env.vars';
 import { ProbeExternalMethod } from '../interfaces/rest.probe.external.method';
 
 const entity: string = "RESTApi";
-const PORT = 8001;
+const PORT = 8081;
 
 export class RESTApi {
     private app = express();
