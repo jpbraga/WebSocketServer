@@ -32,6 +32,9 @@ export class RESTApi {
         this.app.put(`/${this.serverId}/broadcast`, (req: express.Request, res: express.Response) => { this.broadcast(req,res)});
         this.app.get(`/${this.serverId}/probe`, (req: express.Request, res: express.Response) => { this.probe(req,res)});
         this.app.get(`/${this.serverId}/health`, (req: express.Request, res: express.Response) => { this.healthCheck(req,res)});
+        this.app.get('*', function(req, res){ res.status(404).send('Not a valid route'); });
+        this.app.put('*', function(req, res){ res.status(404).send('Not a valid route'); });
+        this.app.post('*', function(req, res){ res.status(404).send('Not a valid route'); });
     }
 
     public async init() {
@@ -64,7 +67,7 @@ export class RESTApi {
 
     private sendMessageRequest(req, res) {
         const validation = this.sendMessageRequestSchema(req, res);
-        if (!validation.isValid) res.send(validation);
+        if (!validation.isValid) res.status(validation.status).send(validation);
         else {
             let payload = {
                 payload: req.body.payload
@@ -75,7 +78,7 @@ export class RESTApi {
             }
             payload[this.uidKey] = req.params.uid;
             this.notifyEventListeners(REST_EVENT_TYPES.SEND_MESSAGE_REQUEST, payload);
-            res.send(validation);
+            res.status(validation.status).send(validation);
         }
     }
 
@@ -90,7 +93,7 @@ export class RESTApi {
         console.log(req.body);
         console.log(req.params);
         const validation = this.disconnectRequestSchema(req, res);
-        if (!validation.isValid) res.send(validation);
+        if (!validation.isValid) res.status(validation.status).send(validation);
         else {
             let payload = {
                 payload: JSON.stringify(req.body)
@@ -101,7 +104,7 @@ export class RESTApi {
             }
             payload[this.uidKey] = req.params.uid;
             this.notifyEventListeners(REST_EVENT_TYPES.DISCONNECT_REQUEST, payload);
-            res.send(validation);
+            res.status(validation.status).send(validation);
         }
     }
 
@@ -115,19 +118,19 @@ export class RESTApi {
     public broadcast(req, res) {
         let data = JSON.parse(req.body.payload);
         const validation = this.broadcastSchema(req, res);
-        if (!validation.isValid) res.send(validation);
+        if (!validation.isValid) res.status(validation.status).send(validation);
         else {
             let payload = {
                 payload: req.body.payload,
             }
             payload[this.uidKey] = data[this.uidKey];
             this.notifyEventListeners(REST_EVENT_TYPES.BROADCAST, payload);
-            res.send(validation);
+            res.status(validation.status).send(validation);
         }
     }
 
     private healthCheck(req, res) {
-        res.status(200).send(this.serverId);
+        res.status(200).send('OK');
     }
 
     private probe(req, res) {

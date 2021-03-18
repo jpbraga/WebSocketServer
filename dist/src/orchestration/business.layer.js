@@ -83,10 +83,10 @@ class BusinessLayer {
                         const queryContent = this.processServerQueries(content);
                         if (queryContent) {
                             this.ws.sendMessage(sender, JSON.stringify(queryContent));
-                            return;
+                            break;
                         }
                     }
-                    payload["data"] = content;
+                    payload["payload"] = JSON.stringify(content);
                     payload[this.uidKey] = sender;
                     if (parseInt(environment_1.Environment.getValue(env_vars_1.ENV_VARS.SHOW_OUTGOING, '0'))) {
                         this.log.debug(entity, `Content sent: ${JSON.stringify(payload)}`);
