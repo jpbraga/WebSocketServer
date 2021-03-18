@@ -36,9 +36,6 @@ class RESTApi {
         this.app.put(`/${this.serverId}/broadcast`, (req, res) => { this.broadcast(req, res); });
         this.app.get(`/${this.serverId}/probe`, (req, res) => { this.probe(req, res); });
         this.app.get(`/${this.serverId}/health`, (req, res) => { this.healthCheck(req, res); });
-        this.app.get('*', function (req, res) { res.status(404).send('Not a valid route'); });
-        this.app.put('*', function (req, res) { res.status(404).send('Not a valid route'); });
-        this.app.post('*', function (req, res) { res.status(404).send('Not a valid route'); });
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
